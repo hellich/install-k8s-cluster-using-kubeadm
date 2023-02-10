@@ -1,6 +1,6 @@
 # install-k8s-cluster-using-kubeadm
 
-## setup prerequisites on all nodes
+## 1.setup prerequisites on all nodes
 
 ```
 #on all nodes
@@ -53,7 +53,7 @@ net.bridge.bridge-nf-call-iptables = 1
 vagrant@kubemaster:~$
 ```
 
-## install container runtime (docker)
+## 2.install container runtime (docker)
 
 ### Update the apt package index and install packages to allow apt to use a repository over HTTPS:
 
@@ -136,7 +136,7 @@ lines 1-19/19 (END)
 
 ```
 
-## install kubeadm, kubelet, kubectl
+## 3.install kubeadm, kubelet, kubectl
 
 ### Update the apt package index and install packages needed to use the Kubernetes apt repository:
 
@@ -160,7 +160,7 @@ sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 ```
 
-## kubeadmin commands to setup k8s cluster (without HA)
+## 4.kubeadmin commands to setup k8s cluster (without HA)
 ```
 kubeadm init --pod-network-cidr 10.244.0.0/16 --apiserver-advertise-address=192.168.56.2
 ```
@@ -270,7 +270,7 @@ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
 
-## install POD network solution (Weave Net)
+## 5.install POD network solution (Weave Net)
 
 All options : https://kubernetes.io/docs/concepts/cluster-administration/addons/#networking-and-network-policy
 
@@ -286,7 +286,7 @@ vagrant@kubemaster:~$
 
 ```
 
-## join 2 worker nodes to k8s cluster
+## 6.join 2 worker nodes to k8s cluster
 
 ```
 kubeadm join 192.168.56.2:6443 --token 8in94y.bfc9dgaa5d7lna5z         --discovery-token-ca-cert-hash sha256:43c1ed9746e5441b26a4a70cac94560d6ea6a278139c380cac6f128e9eafd397
@@ -328,7 +328,7 @@ Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
 root@kubenode01:~#
 ```
 
-## cluster is up
+## 7.cluster is up
 ```
 vagrant@kubemaster:~$ kubectl get nodes
 NAME         STATUS   ROLES           AGE     VERSION
@@ -338,7 +338,7 @@ kubenode02   Ready    <none>          2m29s   v1.26.1
 vagrant@kubemaster:~$
 ```
 
-## test
+## 8.test
 ```
 vagrant@kubemaster:~$ kubectl run nginx --image=nginx
 pod/nginx created
