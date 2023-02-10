@@ -135,3 +135,55 @@ Feb 10 15:43:34 kubemaster dockerd[6026]: time="2023-02-10T15:43:34.884372365Z"
 lines 1-19/19 (END)
 
 ```
+
+## install kubeadm, kubelet, kubectl
+
+### Update the apt package index and install packages needed to use the Kubernetes apt repository:
+
+```
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl
+```
+
+### Download the Google Cloud public signing key:
+```
+sudo curl -fsSLo /etc/apt/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+```
+### Add the Kubernetes apt repository:
+```
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+```
+### Update apt package index, install kubelet, kubeadm and kubectl, and pin their version:
+```
+sudo apt-get update
+sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+```
+
+## kubeadmin commands to setup k8s cluster (without HA)
+```
+kubeadm init --pod-network-cidr 10.244.0.0/16 --apiserver-advertise-address=192.168.56.2
+```
+
+--pod-network-cidr => subnet for PODs
+--apiserver-advertise-addresse => @ for master node
+
+### Error
+```
+root@kubemaster:~# kubeadm init --pod-network-cidr 10.244.0.0/16 --apiserver-advertise-address=192.168.56.2
+[init] Using Kubernetes version: v1.26.1
+[preflight] Running pre-flight checks
+error execution phase preflight: [preflight] Some fatal errors occurred:
+        [ERROR CRI]: container runtime is not running: output: time="2023-02-10T16:02:09Z" level=fatal msg="validate service connection: CRI v1 runtime API is not implemented for endpoint \"unix:///var/run/containerd/containerd.sock\": rpc error: code = Unimplemented desc = unknown service runtime.v1.RuntimeService"
+, error: exit status 1
+[preflight] If you know what you are doing, you can make a check non-fatal with `--ignore-preflight-errors=...`
+To see the stack trace of this error execute with --v=5 or higher
+```
+
+### Fix
+
+```
+root@kubemaster:~# rm /etc/containerd/config.toml
+root@kubemaster:~# systemctl restart containerd
+root@kubemaster:~# kubeadm init --pod-network-cidr 10.244.0.0/16 --apiserver-advertise-address=192.168.56.2
+```
