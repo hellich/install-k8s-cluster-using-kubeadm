@@ -261,3 +261,101 @@ kubeadm join 192.168.56.2:6443 --token 8in94y.bfc9dgaa5d7lna5z \
 root@kubemaster:~#
 
 ```
+
+logout (switch to normal user, not root, on master node)
+
+```
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+```
+
+## install POD network solution (Weave Net)
+
+All options : https://kubernetes.io/docs/concepts/cluster-administration/addons/#networking-and-network-policy
+
+```
+vagrant@kubemaster:~$ kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
+serviceaccount/weave-net created
+clusterrole.rbac.authorization.k8s.io/weave-net created
+clusterrolebinding.rbac.authorization.k8s.io/weave-net created
+role.rbac.authorization.k8s.io/weave-net created
+rolebinding.rbac.authorization.k8s.io/weave-net created
+daemonset.apps/weave-net created
+vagrant@kubemaster:~$
+
+```
+
+## join 2 worker nodes to k8s cluster
+
+```
+kubeadm join 192.168.56.2:6443 --token 8in94y.bfc9dgaa5d7lna5z         --discovery-token-ca-cert-hash sha256:43c1ed9746e5441b26a4a70cac94560d6ea6a278139c380cac6f128e9eafd397
+
+```
+
+### Error
+
+```
+[preflight] Running pre-flight checks
+error execution phase preflight: [preflight] Some fatal errors occurred:
+        [ERROR CRI]: container runtime is not running: output: time="2023-02-10T16:26:11Z" level=fatal msg="validate service connection: CRI v1 runtime API is not implemented for endpoint \"unix:///var/run/containerd/containerd.sock\": rpc error: code = Unimplemented desc = unknown service runtime.v1.RuntimeService"
+, error: exit status 1
+[preflight] If you know what you are doing, you can make a check non-fatal with `--ignore-preflight-errors=...`
+To see the stack trace of this error execute with --v=5 or higher
+```
+
+### Fix
+
+```
+root@kubenode01:~# rm /etc/containerd/config.toml
+root@kubenode01:~# systemctl restart containerd
+root@kubenode01:~#
+root@kubenode01:~# kubeadm join 192.168.56.2:6443 --token 8in94y.bfc9dgaa5d7lna5z         --discovery-token-ca-cert-hash sha256:43c1ed9746e5441b26a4a70cac94560d6ea6a278139c380cac6f128e9eafd397
+[preflight] Running pre-flight checks
+[preflight] Reading configuration from the cluster...
+[preflight] FYI: You can look at this config file with 'kubectl -n kube-system get cm kubeadm-config -o yaml'
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
+[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
+[kubelet-start] Starting the kubelet
+[kubelet-start] Waiting for the kubelet to perform the TLS Bootstrap...
+
+This node has joined the cluster:
+* Certificate signing request was sent to apiserver and a response was received.
+* The Kubelet was informed of the new secure connection details.
+
+Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
+
+root@kubenode01:~#
+```
+
+## cluster is up
+```
+vagrant@kubemaster:~$ kubectl get nodes
+NAME         STATUS   ROLES           AGE     VERSION
+kubemaster   Ready    control-plane   22m     v1.26.1
+kubenode01   Ready    <none>          2m53s   v1.26.1
+kubenode02   Ready    <none>          2m29s   v1.26.1
+vagrant@kubemaster:~$
+```
+
+## test
+```
+vagrant@kubemaster:~$ kubectl run nginx --image=nginx
+pod/nginx created
+vagrant@kubemaster:~$ kubectl get pods
+NAME    READY   STATUS              RESTARTS   AGE
+nginx   0/1     ContainerCreating   0          5s
+vagrant@kubemaster:~$ kubectl get pods
+NAME    READY   STATUS              RESTARTS   AGE
+nginx   0/1     ContainerCreating   0          7s
+vagrant@kubemaster:~$ kubectl get pods
+NAME    READY   STATUS    RESTARTS   AGE
+nginx   1/1     Running   0          13s
+vagrant@kubemaster:~$ kubectl delete pod nginx
+pod "nginx" deleted
+
+vagrant@kubemaster:~$
+vagrant@kubemaster:~$ kubectl get pods
+No resources found in default namespace.
+vagrant@kubemaster:~$
+```
